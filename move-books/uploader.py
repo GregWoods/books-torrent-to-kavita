@@ -49,6 +49,11 @@ def extract_title(file_path):
 
 
 def is_file_ready(file_path, timeout=10, check_interval=1):
+    ext = os.path.splitext(file_path)[-1].lower()
+    if ext == ".crdownload":
+        logging.info(f"File {file_path} is still downloading, waiting for it to complete.")
+        return False  # File is still downloading, not ready
+
     """Checks if a file is ready by monitoring its size."""
     initial_size = -1
     start_time = time.time()
@@ -83,7 +88,6 @@ def process_book(file_path):
     base_name = os.path.splitext(filename)[0]
     logging.info(f"Title: {title}")
 
-    # Ensure books with same base filename are grouped
     book_folder = base_name if not title else title
     dest_folder = os.path.join(DESTINATION_FOLDER, book_folder)
     os.makedirs(dest_folder, exist_ok=True)
