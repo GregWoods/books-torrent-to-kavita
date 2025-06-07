@@ -1,27 +1,33 @@
 services:
 
-  rtorrent:
-    image: gregkwoods/rtorrent
-    container_name: rtorrent
-    volumes:
-      - /home/gadmin/shares/everyone/.torrent:/watch  # Folder where you drop .torrent files
-      - /home/gadmin/shares/everyone/downloads-temp:/downloads  # Destination for completed files
-      - ./rtorrent/config:/config  # Persistent config storage
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    container_name: deluge
     environment:
-      - PUID=1000
-      - PGID=1000
+      #1001 is the user "everyone"
+      - PUID=1001
+      - PGID=1001
       - TZ=Etc/UTC
-    restart: unless-stopped
-
-
-  kavita-uploader:
-    image: kavita-uploader
-    container_name: kavita-uploader
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "5051:5000"
+      - DELUGE_LOGLEVEL=error #optional
     volumes:
-      - /home/gadmin/shares/everyone/books/incoming:/app/kavita_destination
-      - /home/gadmin/shares/everyone/downloads-temp:/app/books_source
+      - ./deluge/config:/config
+      - /home/gadmin/shares/everyone/torrent:/watch
+      - /home/gadmin/shares/everyone/downloads-temp:/downloads
+    ports:
+      - 8112:8112
+      - 6881:6881
+      - 6881:6881/udp
+      - 58846:58846 #optional
+    restart: unless-stopped  
+
+
+  move-books:
+    image: gregkwoods/move-books
+    build:
+      context: ./move-books
+    container_name: move-books
+    volumes:
+      - /home/gadmin/shares/everyone/downloads-temp:/books_source
+      - /home/gadmin/shares/everyone/books-ready-for-kavita:/books_destination
+    user: "1001:1001" #everyone:everyone
+    restart: unless-stopped
