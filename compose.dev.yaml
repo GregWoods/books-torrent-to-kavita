@@ -1,21 +1,24 @@
 services:
 
-  rtorrent:
-    image: gregkwoods/rtorrent:latest
-    container_name: rtorrent
-    build:
-      context: ./rtorrent
-      dockerfile: Dockerfile
-    volumes:
-      - /home/gadmin/shares/everyone/.torrent:/watch  # Folder where you drop .torrent files
-      - /home/gadmin/shares/everyone/downloads-temp:/downloads  # Destination for completed files
-      # backslashes for relative paths using WSL2 Docker on Windows
-      - .\rtorrent\config:/config  # Persistent config storage
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    container_name: deluge
     environment:
-      - PUID=1000
-      - PGID=1000
+      #1001 is the user "everyone"
+      - PUID=1001
+      - PGID=1001
       - TZ=Etc/UTC
-    restart: unless-stopped
+      - DELUGE_LOGLEVEL=error #optional
+    volumes:
+      - .\deluge\config:/config
+      - torrent_folder:/watch
+      - books_source:/downloads
+    ports:
+      - 8112:8112
+      - 6881:6881
+      - 6881:6881/udp
+      - 58846:58846 #optional
+    restart: unless-stopped  
 
 
   move-books:
@@ -34,15 +37,21 @@ volumes:
   # These volumes are for local use.
   #   If the kavita uploader was run on the proxmox server, 
   #   we could use simple bind mounts
-  books_source:
+  torrent_folder:
     driver: local
     driver_opts:
       type: cifs
-      device: "//10.0.1.2/everyone/books-new-downloads"
-      o: "username=everyone,password=********,uid=1000,gid=1000,vers=3.0"
+      device: "//10.0.1.2/everyone/torrent"
+      o: "username=everyone,password=********,uid=1001,gid=1001,vers=3.0"
+  books_source:
+    driver: local
+    driver_opts:
+      typeS: cifs
+      device: "//10.0.1.2/everyone/downloads-temp"
+      o: "username=everyone,password=********,uid=1001,gid=1001,vers=3.0"
   books_destination:
     driver: local
     driver_opts:
       type: cifs
-      device: "//10.0.1.2/everyone/books-to-move-into-kavita"
-      o: "username=everyone,password=********,uid=1000,gid=1000,vers=3.0"
+      device: "//10.0.1.2/everyone/books-ready-for-kavita"
+      o: "username=everyone,password=********,uid=1001,gid=1001,vers=3.0"
