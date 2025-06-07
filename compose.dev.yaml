@@ -1,0 +1,48 @@
+services:
+
+  rtorrent:
+    image: gregkwoods/rtorrent:latest
+    container_name: rtorrent
+    build:
+      context: ./rtorrent
+      dockerfile: Dockerfile
+    volumes:
+      - /home/gadmin/shares/everyone/.torrent:/watch  # Folder where you drop .torrent files
+      - /home/gadmin/shares/everyone/downloads-temp:/downloads  # Destination for completed files
+      # backslashes for relative paths using WSL2 Docker on Windows
+      - .\rtorrent\config:/config  # Persistent config storage
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    restart: unless-stopped
+
+
+  move-books:
+    image: gregkwoods/move-books
+    container_name: move-books
+    build:
+      context: .
+      dockerfile: .\move-books\Dockerfile
+    ports:
+      - "5051:5000"
+    volumes:
+      - books_destination:/app/kavita_destination
+      - books_source:/app/books_source
+
+volumes:
+  # These volumes are for local use.
+  #   If the kavita uploader was run on the proxmox server, 
+  #   we could use simple bind mounts
+  books_source:
+    driver: local
+    driver_opts:
+      type: cifs
+      device: "//10.0.1.2/everyone/books-new-downloads"
+      o: "username=everyone,password=********,uid=1000,gid=1000,vers=3.0"
+  books_destination:
+    driver: local
+    driver_opts:
+      type: cifs
+      device: "//10.0.1.2/everyone/books-to-move-into-kavita"
+      o: "username=everyone,password=********,uid=1000,gid=1000,vers=3.0"

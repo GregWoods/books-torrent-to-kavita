@@ -1,0 +1,27 @@
+services:
+
+  rtorrent:
+    image: gregkwoods/rtorrent
+    container_name: rtorrent
+    volumes:
+      - /home/gadmin/shares/everyone/.torrent:/watch  # Folder where you drop .torrent files
+      - /home/gadmin/shares/everyone/downloads-temp:/downloads  # Destination for completed files
+      - ./rtorrent/config:/config  # Persistent config storage
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    restart: unless-stopped
+
+
+  kavita-uploader:
+    image: kavita-uploader
+    container_name: kavita-uploader
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5051:5000"
+    volumes:
+      - /home/gadmin/shares/everyone/books/incoming:/app/kavita_destination
+      - /home/gadmin/shares/everyone/downloads-temp:/app/books_source
